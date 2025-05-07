@@ -1,0 +1,23 @@
+{
+    "name": "frontend-web",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@tailwindcss/postcss7-compat": "^2.2.17",
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0",
+        "react-router-dom": "^6.0.0"
+    },
+    "devDependencies": {
+        "autoprefixer": "^9.8.6",
+        "postcss": "^7.0.39",
+        "tailwindcss": "^2.2.19",
+        "vite": "^4.5.14"
+    }
+}

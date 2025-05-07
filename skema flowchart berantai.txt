@@ -1,0 +1,203 @@
+Flowchart Bagian 1: device-scanner/common
+barcode_reader.py
+Start
+  └──> Inisialisasi kamera
+        └──> Mulai pembacaan barcode
+              └──> Jika barcode terdeteksi:
+                    └──> Kembalikan nilai barcode
+                          └──> End
+              └──> Jika tidak ada barcode:
+                    └──> Loop ulang membaca
+
+sender.py
+Start
+  └──> Terima data barcode
+        └──> Siapkan koneksi HTTP/HTTPS
+              └──> Kirim data ke server (POST)
+                    └──> Terima respon
+                          └──> Sukses? -> log OK
+                          └──> Gagal? -> log error
+                                └──> End
+
+File konfigurasi:
+{
+  "server_url": "http://.../api",
+  "device_id": "RPi-001"
+}
+
+🔹 Flowchart Bagian 2: device-scanner/rpi-version
+
+device-scanner/rpi-version
+main.py
+Start
+  └──> Load config.json
+        └──> Inisialisasi kamera (panggil camera_rpi)
+              └──> Loop: Baca barcode dari camera_rpi
+                    └──> Jika barcode terdeteksi:
+                          └──> Kirim ke sender.py
+                          └──> Tampilkan log sukses/gagal
+                    └──> Delay sejenak
+                          └──> Ulangi loop
+
+camera_rpi.py
+Start
+  └──> Aktifkan kamera PiCamera
+        └──> Stream gambar
+              └──> Scan frame dengan library zbar/dlib/opencv
+                    └──> Jika barcode ditemukan:
+                          └──> Return data barcode
+                    └──> Else: continue scanning
+startup.sh
+Start (boot Raspberry Pi)
+  └──> Jalankan `python3 main.py`
+        └──> Log dijalankan di background
+              └──> Siap otomatis tiap boot
+note :
+sudo nano /etc/rc.local
+# Tambahkan sebelum 'exit 0':
+python3 /home/pi/absensi-barcode-siswa/device-scanner/rpi-version/main.py &
+
+🔹 Flowchart Bagian 3: device-scanner/laptop-version
+main.py
+Start
+  └──> Load config.json
+        └──> Inisialisasi webcam (panggil camera_webcam)
+              └──> Loop: Baca barcode dari webcam
+                    └──> Jika barcode terdeteksi:
+                          └──> Kirim ke sender.py
+                          └──> Log berhasil/gagal
+                    └──> Delay
+                          └──> Ulangi loop
+
+camera_webcam.py
+Start
+  └──> Aktifkan webcam via OpenCV (cv2.VideoCapture)
+        └──> Ambil frame secara real-time
+              └──> Pindai barcode dari frame
+                    └──> Jika ada:
+                          └──> Return barcode
+                    └──> Else: continue scanning
+
+run_test.bat
+
+Start (klik dua kali)
+  └──> Jalankan `python main.py`
+        └──> Console terbuka dan proses dimulai
+
+🔹 Flowchart Bagian 4: backend-server
+🟢 File: app.py
+plaintext
+
+Start (Flask App)
+  └──> Load environment (.env)
+        └──> Connect database (database.py)
+              └──> Register route `/scan` (scan_api.py)
+                    └──> Run Flask server
+
+ File: scan_api.py
+plaintext
+
+Route: /scan (POST)
+  └──> Ambil data dari request (barcode + timestamp)
+        └──> Validasi & cari siswa (models/siswa.py)
+              └──> Jika ditemukan:
+                    └──> Simpan ke DB (database.py)
+                    └──> Return response sukses
+              └──> Jika tidak ditemukan:
+                    └──> Return error respon
+
+✅ Flowchart Tambahan: Barcode Generation
+[Admin Input Data Siswa]
+        ↓
+[Generate Barcode Image]
+( barcode_generator.py )
+        ↓
+[Simpan PNG di /static/barcodes ]
+        ↓
+[Return URL Barcode ke Frontend]
+( untuk ditampilkan / dicetak )
+
+
+ File: siswa.py
+
+plaintext
+
+Fungsi:
+  └──> Cari siswa berdasarkan barcode
+  └──> Format data siswa (dict/json)
+  └──> Opsional: validasi kehadiran
+
+🟢 File: database.py
+Start
+  └──> Connect ke SQLite / PostgreSQL (via SQLAlchemy atau raw)
+        └──> Buat tabel jika belum ada
+              └──> Fungsi simpan data absensi
+                    └──> Fungsi ambil rekap per siswa/per bulan
+
+🟢 File: .env
+DB_URL=sqlite:///db/absensi.db
+FLASK_ENV=development
+SECRET_KEY=xyz
+
+File: requirements.txt
+flask
+python-dotenv
+sqlalchemy
+flask-cors
+
+🟦 Flowchart Bagian 5: frontend-web
+src/App.jsx
+Start App.jsx
+  └──> Import React Router
+        ├──> Route: `/login` → Login.jsx
+        ├──> Route: `/admin` → AdminDashboard.jsx
+        └──> Route: `/orangtua` → OrangTuaView.jsx
+
+📄 src/pages/Login.jsx
+
+User Input: Userna
+me + Password
+  └──> Submit → validate dummy or API
+        └──> if success → redirect ke /admin or /orangtua
+
+📄 src/pages/AdminDashboard.jsx
+
+On Load:
+  └──> Fetch data absensi dari API
+        └──> Tampilkan data di <RekapTable />
+        └──> Bisa filter tanggal/bulan
+
+Fitur:
+  └──> Logout → redirect ke login
+
+📄 src/pages/OrangTuaView.jsx
+On Load:
+  └──> Fetch data anak dari API (berdasarkan akun orang tua)
+        └──> Tampilkan <AbsensiCard /> per anak
+
+ src/components/RekapTable.jsx
+
+Props: data absensi
+  └──> Render dalam bentuk table
+        └──> Tambahkan warna/label (Hadir, Telat, Izin, dll)
+
+📄 src/components/AbsensiCard.jsx
+
+Props: data 1 siswa
+  └──> Tampilkan nama, kelas, total hadir, telat, dll
+
+📄 src/api.js
+
+Base URL: http://localhost:5000/
+  └──> Function: getAbsensi(), postLogin(), getRekap()
+
+📄 tailwind.config.js
+Setup styling untuk theme
+  └──> Tambahkan warna custom kalau perlu
+
+📄 package.json
+Dependencies:
+  └──> react, react-router-dom, axios, tailwindcss, vite, dll
+
+📁 public/
+favicon, logo, dan gambar lainnya

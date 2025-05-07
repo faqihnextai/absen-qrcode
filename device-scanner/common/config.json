@@ -1,0 +1,4 @@
+{
+  "server_url": "http://localhost:5000/api/barcode",
+  "device_id": "Laptop-Scanner-01"
+}
